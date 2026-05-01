@@ -228,6 +228,7 @@ async def _handle_client(
                     event.ip,
                 )
             if event is None:
+                _LOGGER.debug("Line did not match Kea parser from %s: %s", remote_ip, line)
                 continue
 
             if event.event_type == "DHCP4_LEASE_ALLOC" and not runtime.enable_alloc:
