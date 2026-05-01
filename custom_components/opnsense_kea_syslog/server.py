@@ -219,6 +219,14 @@ async def _handle_client(
                 _LOGGER.info("Syslog line from %s: %s", remote_ip, line)
 
             event: KeaEvent | None = parse_kea_log_line(line)
+            if event is not None:
+                _LOGGER.debug(
+                    "Parsed Kea event from %s: event_type=%s mac=%s ip=%s",
+                    remote_ip,
+                    event.event_type,
+                    event.mac,
+                    event.ip,
+                )
             if event is None:
                 continue
 
