@@ -244,6 +244,14 @@ async def _handle_client(
                 "raw": line,
                 "ts": dt_util.utcnow().isoformat(),
             }
+            _LOGGER.debug(
+                "Firing %s: mac=%s event_type=%s ip=%s remote_ip=%s",
+                EVENT_DEVICE_JOINED_NETWORK,
+                payload.get("mac"),
+                payload.get("event_type"),
+                payload.get("ip"),
+                payload.get("remote_ip"),
+            )
             hass.bus.async_fire(EVENT_DEVICE_JOINED_NETWORK, payload)
     except asyncio.CancelledError:
         raise
