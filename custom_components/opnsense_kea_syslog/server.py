@@ -101,8 +101,17 @@ def _build_runtime_config(entry: ConfigEntry) -> RuntimeConfig:
 
     bind_host = str(cfg.get(CONF_BIND_HOST, DEFAULT_BIND_HOST))
     port = int(cfg.get(CONF_PORT, DEFAULT_PORT))
-    allowed_ips = list(cfg.get(CONF_ALLOWED_IPS, DEFAULT_ALLOWED_IPS) or [])
-    monitored_raw = list(cfg.get(CONF_MONITORED_MACS, DEFAULT_MONITORED_MACS) or [])
+    allowed_val = cfg.get(CONF_ALLOWED_IPS, DEFAULT_ALLOWED_IPS)
+    if isinstance(allowed_val, str):
+        allowed_ips = [s.strip() for s in allowed_val.replace(",", "\n").splitlines() if s.strip()]
+    else:
+        allowed_ips = list(allowed_val or [])
+
+    monitored_val = cfg.get(CONF_MONITORED_MACS, DEFAULT_MONITORED_MACS)
+    if isinstance(monitored_val, str):
+        monitored_raw = [s.strip() for s in monitored_val.replace(",", "\n").splitlines() if s.strip()]
+    else:
+        monitored_raw = list(monitored_val or [])
 
     monitored: set[str] = set()
     for m in monitored_raw:
