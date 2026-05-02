@@ -232,16 +232,45 @@ async def _handle_client(
                 continue
 
             if event.event_type == "DHCP4_LEASE_ALLOC" and not runtime.enable_alloc:
+                _LOGGER.debug(
+                    "Ignoring DHCP4_LEASE_ALLOC (disabled) from %s: mac=%s ip=%s",
+                    remote_ip,
+                    event.mac,
+                    event.ip,
+                )
                 continue
             if event.event_type == "DHCP4_LEASE_RENEW" and not runtime.enable_renew:
+                _LOGGER.debug(
+                    "Ignoring DHCP4_LEASE_RENEW (disabled) from %s: mac=%s ip=%s",
+                    remote_ip,
+                    event.mac,
+                    event.ip,
+                )
                 continue
 
             if event.mac not in runtime.monitored_macs:
+                _LOGGER.debug(
+                    "Ignoring event (MAC not monitored) from %s: mac=%s event_type=%s ip=%s monitored=%s",
+                    remote_ip,
+                    event.mac,
+                    event.event_type,
+                    event.ip,
+                    sorted(runtime.monitored_macs),
+                )
                 continue
 
             now = time()
             prev = last_seen.get(event.mac, 0.0)
             if runtime.cooldown_seconds > 0 and (now - prev) < runtime.cooldown_seconds:
+                _LOGGER.debug(
+                    "Ignoring event (cooldown) from %s: mac=%s event_type=%s ip=%s cooldown_s=%s elapsed_s=%.3f",
+                    remote_ip,
+                    event.mac,
+                    event.event_type,
+                    event.ip,
+                    runtime.cooldown_seconds,
+                    now - prev,
+                )
                 continue
             last_seen[event.mac] = now
 
