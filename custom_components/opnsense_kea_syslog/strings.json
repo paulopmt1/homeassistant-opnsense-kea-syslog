@@ -1,0 +1,46 @@
+{
+  "config": {
+    "error": {
+      "invalid_port": "Port must be between 1 and 65535.",
+      "invalid_cooldown": "Cooldown must be zero or a positive number."
+    },
+    "step": {
+      "user": {
+        "title": "OPNsense Kea Syslog",
+        "description": "Monitored MACs: use a JSON array of objects with name and mac, for example:\n[\n  {\"name\": \"Notebook\", \"mac\": \"aa:bb:cc:dd:ee:ff\"},\n  {\"name\": \"Phone\", \"mac\": \"11:22:33:44:55:66\"}\n]\nLegacy format still works: one MAC per line (or comma-separated).",
+        "data": {
+          "bind_host": "Bind host",
+          "port": "TCP port",
+          "allowed_ips": "Allowed client IPs (one per line or CSV; empty = allow all)",
+          "monitored_macs": "Monitored MACs (JSON array or legacy list)",
+          "enable_alloc": "React to DHCP4_LEASE_ALLOC",
+          "enable_renew": "React to DHCP4_LEASE_RENEW",
+          "cooldown_seconds": "Cooldown between events (seconds)",
+          "log_all_lines": "Log every syslog line (debug)"
+        }
+      }
+    }
+  },
+  "options": {
+    "error": {
+      "invalid_port": "Port must be between 1 and 65535.",
+      "invalid_cooldown": "Cooldown must be zero or a positive number."
+    },
+    "step": {
+      "init": {
+        "title": "OPNsense Kea Syslog",
+        "description": "Monitored MACs: use a JSON array of objects with name and mac, for example:\n[\n  {\"name\": \"Notebook\", \"mac\": \"aa:bb:cc:dd:ee:ff\"},\n  {\"name\": \"Phone\", \"mac\": \"11:22:33:44:55:66\"}\n]\nLegacy format still works: one MAC per line (or comma-separated).",
+        "data": {
+          "bind_host": "Bind host",
+          "port": "TCP port",
+          "allowed_ips": "Allowed client IPs (one per line or CSV; empty = allow all)",
+          "monitored_macs": "Monitored MACs (JSON array or legacy list)",
+          "enable_alloc": "React to DHCP4_LEASE_ALLOC",
+          "enable_renew": "React to DHCP4_LEASE_RENEW",
+          "cooldown_seconds": "Cooldown between events (seconds)",
+          "log_all_lines": "Log every syslog line (debug)"
+        }
+      }
+    }
+  }
+}

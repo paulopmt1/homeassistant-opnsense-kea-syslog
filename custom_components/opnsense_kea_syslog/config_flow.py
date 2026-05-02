@@ -139,12 +139,7 @@ def _schema_with_defaults(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(
                 CONF_MONITORED_MACS,
                 default=_monitored_macs_default(defaults.get(CONF_MONITORED_MACS, DEFAULT_MONITORED_MACS)),
-            ): selector.TextSelector(
-                selector.TextSelectorConfig(
-                    multiline=True,
-                    placeholder='[\n  {"name": "Paulo - Notebook", "mac": "aa:bb:cc:dd:ee:ff"},\n  {"name": "Paulo - Celular", "mac": "11:22:33:44:55:66"}\n]',
-                )
-            ),
+            ): selector.TextSelector(selector.TextSelectorConfig(multiline=True)),
             vol.Optional(
                 CONF_ENABLE_ALLOC,
                 default=defaults.get(CONF_ENABLE_ALLOC, DEFAULT_ENABLE_ALLOC),
