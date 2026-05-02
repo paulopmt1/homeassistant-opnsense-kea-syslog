@@ -20,7 +20,13 @@ Custom integration for Home Assistant that opens a **Syslog TCP listener** (conf
 ## OPNsense Configuration
 Set up syslog TCP forwarding to the Home Assistant IP at the port you define in the integration.
 
-Expected format is **one message per line** (newline `\n`).
+Go to System > Settings > Logging > Remote and create something like this:
+
+
+<img width="1710" height="937" alt="image" src="https://github.com/user-attachments/assets/9db5e5d4-abe5-4db7-b605-28c660adb3b8" />
+
+
+Note: Make sure the Hostname and Port matches your Home assistant configs.
 
 ## Emitted event: `device_joined_network`
 When detected, the integration fires an event with:
@@ -41,25 +47,56 @@ Where to see it:
 - **Settings → System → Logs**
 - Or CLI: `ha core logs -f`
 
+## Example configuration (Integration Options)
+
+This is an example of how to configure the integration in **Settings → Devices & services → OPNsense Kea Syslog → Configure**:
+
+```yaml
+bind_host: 0.0.0.0
+port: 10514
+allowed_ips: "192.168.5.1"
+
+monitored_macs:
+  - name: "Paulo notebook"
+    mac: "e1:db:45:ff:78:61"
+
+enable_alloc: true
+enable_renew: true
+cooldown_seconds: 300
+log_all_lines: false
+```
+
+Visually, it will look like this:
+
+<img width="746" height="1193" alt="image" src="https://github.com/user-attachments/assets/aec16196-5abb-4f38-9611-c413f015b3c5" />
+
 ## Example automation (YAML)
 
 ```yaml
-automation:
-  - alias: "Phone joined the network"
-    mode: single
-    trigger:
-      - platform: event
-        event_type: device_joined_network
-    condition:
-      - condition: template
-        value_template: >
-          {{ trigger.event.data.mac in ['AA:BB:CC:DD:EE:FF'] }}
-    action:
-      - service: notify.notify
-        data:
-          message: >
-            MAC {{ trigger.event.data.mac }} joined the network (IP {{ trigger.event.data.ip }}),
-            via {{ trigger.event.data.event_type }}.
+alias: Device joined network (robust MAC check)
+mode: single
+description: ligar luz ao conectar no DHCP
+
+trigger:
+  - platform: event
+    event_type: device_joined_network
+
+condition:
+  - condition: template
+    value_template: >
+      {{ trigger.event.data.mac | lower == "e1:db:45:ff:78:61" }}
+
+action:
+  - service: notify.notify
+    data:
+      message: >
+        Device connected with IP {{ trigger.event.data.ip }}
+  - service: light.toggle
+    metadata: {}
+    target:
+      entity_id: light.sala_amarela
+    data:
+      brightness_pct: 100
 ```
 
 ## Quick test (manual)
