@@ -28,47 +28,12 @@ Go to System > Settings > Logging > Remote and create something like this:
 
 Note: Make sure the Hostname and Port matches your Home assistant configs.
 
-## Emitted event: `device_joined_network`
-When detected, the integration fires an event with:
-
-- `event_type`: `DHCP4_LEASE_ALLOC` or `DHCP4_LEASE_RENEW`
-- `mac`: `AA:BB:CC:DD:EE:FF`
-- `ip`: `192.168.1.101` (if present in the line)
-- `remote_ip`: Remote IP that connected (e.g., OPNsense)
-- `raw`: Full received line
-- `ts`: UTC ISO timestamp of the moment received by HA
-
-## Live logs (everything received)
-If you enable `log_all_lines` in the integration options, Home Assistant will log every received line in real time:
-
-- Example log line: `Syslog line from 192.168.1.1: <full_line>`
-
-Where to see it:
-- **Settings → System → Logs**
-- Or CLI: `ha core logs -f`
-
 ## Example configuration (Integration Options)
 
-This is an example of how to configure the integration in **Settings → Devices & services → OPNsense Kea Syslog → Configure**:
-
-```yaml
-bind_host: 0.0.0.0
-port: 10514
-allowed_ips: "192.168.5.1"
-
-monitored_macs:
-  - name: "Paulo notebook"
-    mac: "e1:db:45:ff:78:61"
-
-enable_alloc: true
-enable_renew: true
-cooldown_seconds: 300
-log_all_lines: false
-```
-
-Visually, it will look like this:
+This is an example of how to configure the integration in **Settings → Devices & services → OPNsense Kea Syslog → Configure**. Visually, it will look like this:
 
 <img width="746" height="1193" alt="image" src="https://github.com/user-attachments/assets/aec16196-5abb-4f38-9611-c413f015b3c5" />
+
 
 ## Example automation (YAML)
 
@@ -84,7 +49,7 @@ trigger:
 condition:
   - condition: template
     value_template: >
-      {{ trigger.event.data.mac | lower == "e1:db:45:ff:78:61" }}
+      {{ trigger.event.data.mac | lower == "AA:BB:CC:DD:EE:FF" }}
 
 action:
   - service: notify.notify
@@ -100,7 +65,7 @@ action:
 ```
 
 ## Quick test (manual)
-From an allowed host (e.g., OPNsense itself or any machine in the allowlist), connect and send a line:
+From an allowed host (e.g., OPNsense itself or any machine in the allowlist), and using a configured MAC address, connect and send a line:
 
 ```bash
 nc <home_assistant_ip> <configured_port>
@@ -109,4 +74,21 @@ nc <home_assistant_ip> <configured_port>
 Paste a line like:
 `INFO [kea-dhcp4.leases.0x...] DHCP4_LEASE_ALLOC [hwtype=1 AA:BB:CC:DD:EE:FF], cid=[01:AA:BB:CC:DD:EE:FF], tid=0x...: lease 192.168.1.101 has been allocated for 4000 seconds`
 
-Then check **Developer Tools → Events** and listen to `device_joined_network`.
+Then check **Developer Tools → Events** and listen to `device_joined_network`. You should see something like this:
+
+<img width="827" height="1060" alt="image" src="https://github.com/user-attachments/assets/e418a15c-6a2f-4c3a-a528-5573c64da114" />
+
+## Debug mode / Live logs (everything received)
+If you enable `log_all_lines` in the integration options, Home Assistant will log every received line in real time.
+Also, enable the debug mode in your `/homeassistant/configuration.yaml` to see everything:
+
+```
+logger:
+  default: info
+  logs:
+    custom_components.opnsense_kea_syslog: debug
+```
+
+That will show the whole detection process, and you can easily check whether the configs are correct or not by checking the HA logs with `ha core logs -f`:
+
+<img width="993" height="290" alt="image" src="https://github.com/user-attachments/assets/0183db13-db02-408e-83a2-9e48f5ad0d36" />
