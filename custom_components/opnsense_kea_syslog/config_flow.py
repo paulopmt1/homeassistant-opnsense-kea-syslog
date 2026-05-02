@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any
 
 import voluptuous as vol
@@ -40,6 +41,31 @@ def _string_list_default(value: Any) -> str:
     return str(value)
 
 
+def _monitored_macs_default(value: Any) -> str:
+    """Convert stored monitored_macs to a JSON editor-friendly default."""
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+
+    # Already in the new shape (list[dict]) or a list of strings (legacy).
+    if isinstance(value, list):
+        items: list[dict[str, str]] = []
+        for x in value:
+            if isinstance(x, dict):
+                name = str(x.get("name", "")).strip()
+                mac = str(x.get("mac", "")).strip()
+                if mac:
+                    items.append({"name": name, "mac": mac})
+                continue
+            s = str(x).strip()
+            if s:
+                items.append({"name": "", "mac": s})
+        return json.dumps(items, indent=2, ensure_ascii=False)
+
+    return str(value)
+
+
 def _parse_string_list(value: Any) -> list[str]:
     """Parse multiline/comma-separated input into a list of strings."""
     if value is None:
@@ -54,6 +80,53 @@ def _parse_string_list(value: Any) -> list[str]:
     return [s for s in items if s]
 
 
+def _parse_monitored_macs(value: Any) -> list[dict[str, str]]:
+    """Parse monitored_macs as JSON (preferred) or legacy newline list."""
+    if value is None:
+        return []
+    if isinstance(value, list):
+        out: list[dict[str, str]] = []
+        for x in value:
+            if isinstance(x, dict):
+                name = str(x.get("name", "")).strip()
+                mac = str(x.get("mac", "")).strip()
+                if mac:
+                    out.append({"name": name, "mac": mac})
+                continue
+            s = str(x).strip()
+            if s:
+                out.append({"name": "", "mac": s})
+        return out
+
+    if not isinstance(value, str):
+        s = str(value).strip()
+        return [{"name": "", "mac": s}] if s else []
+
+    s = value.strip()
+    if not s:
+        return []
+
+    # Preferred: JSON array of {name, mac}
+    try:
+        parsed = json.loads(s)
+        if isinstance(parsed, list):
+            out2: list[dict[str, str]] = []
+            for item in parsed:
+                if not isinstance(item, dict):
+                    continue
+                name = str(item.get("name", "")).strip()
+                mac = str(item.get("mac", "")).strip()
+                if mac:
+                    out2.append({"name": name, "mac": mac})
+            return out2
+    except json.JSONDecodeError:
+        # Fallback to legacy format below.
+        pass
+
+    # Legacy: one MAC per line / comma-separated
+    return [{"name": "", "mac": mac} for mac in _parse_string_list(s)]
+
+
 def _schema_with_defaults(defaults: dict[str, Any]) -> vol.Schema:
     return vol.Schema(
         {
@@ -65,8 +138,13 @@ def _schema_with_defaults(defaults: dict[str, Any]) -> vol.Schema:
             ): selector.TextSelector(selector.TextSelectorConfig(multiline=True)),
             vol.Optional(
                 CONF_MONITORED_MACS,
-                default=_string_list_default(defaults.get(CONF_MONITORED_MACS, DEFAULT_MONITORED_MACS)),
-            ): selector.TextSelector(selector.TextSelectorConfig(multiline=True)),
+                default=_monitored_macs_default(defaults.get(CONF_MONITORED_MACS, DEFAULT_MONITORED_MACS)),
+            ): selector.TextSelector(
+                selector.TextSelectorConfig(
+                    multiline=True,
+                    placeholder='[\n  {"name": "Paulo - Notebook", "mac": "aa:bb:cc:dd:ee:ff"},\n  {"name": "Paulo - Celular", "mac": "11:22:33:44:55:66"}\n]',
+                )
+            ),
             vol.Optional(
                 CONF_ENABLE_ALLOC,
                 default=defaults.get(CONF_ENABLE_ALLOC, DEFAULT_ENABLE_ALLOC),
@@ -96,7 +174,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             user_input = dict(user_input)
             user_input[CONF_ALLOWED_IPS] = _parse_string_list(user_input.get(CONF_ALLOWED_IPS))
-            user_input[CONF_MONITORED_MACS] = _parse_string_list(user_input.get(CONF_MONITORED_MACS))
+            user_input[CONF_MONITORED_MACS] = _parse_monitored_macs(user_input.get(CONF_MONITORED_MACS))
 
             port = user_input.get(CONF_PORT, DEFAULT_PORT)
             cooldown = user_input.get(CONF_COOLDOWN_SECONDS, DEFAULT_COOLDOWN_SECONDS)
@@ -128,7 +206,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         if user_input is not None:
             user_input = dict(user_input)
             user_input[CONF_ALLOWED_IPS] = _parse_string_list(user_input.get(CONF_ALLOWED_IPS))
-            user_input[CONF_MONITORED_MACS] = _parse_string_list(user_input.get(CONF_MONITORED_MACS))
+            user_input[CONF_MONITORED_MACS] = _parse_monitored_macs(user_input.get(CONF_MONITORED_MACS))
 
             port = user_input.get(CONF_PORT, DEFAULT_PORT)
             cooldown = user_input.get(CONF_COOLDOWN_SECONDS, DEFAULT_COOLDOWN_SECONDS)

@@ -47,6 +47,7 @@ class RuntimeConfig:
     port: int
     allowed_networks: tuple[ipaddress._BaseNetwork, ...]
     monitored_macs: frozenset[str]
+    monitored_mac_names: dict[str, str]
     enable_alloc: bool
     enable_renew: bool
     cooldown_seconds: int
@@ -114,18 +115,32 @@ def _build_runtime_config(entry: ConfigEntry) -> RuntimeConfig:
         monitored_raw = list(monitored_val or [])
 
     monitored: set[str] = set()
+    monitored_names: dict[str, str] = {}
     for m in monitored_raw:
-        nm = _normalize_mac(str(m))
-        if nm:
-            monitored.add(nm)
+        raw_mac: str | None = None
+        raw_name: str | None = None
+
+        if isinstance(m, dict):
+            raw_mac = str(m.get("mac", "")).strip()
+            raw_name = str(m.get("name", "")).strip()
         else:
-            _LOGGER.warning("Ignoring invalid monitored MAC: %s", m)
+            raw_mac = str(m).strip()
+
+        nm = _normalize_mac(raw_mac or "")
+        if not nm:
+            _LOGGER.warning("Ignoring invalid monitored MAC: %s", raw_mac if raw_mac is not None else m)
+            continue
+
+        monitored.add(nm)
+        if raw_name:
+            monitored_names[nm] = raw_name
 
     return RuntimeConfig(
         bind_host=bind_host,
         port=port,
         allowed_networks=_compile_allowed_networks([str(x) for x in allowed_ips]),
         monitored_macs=frozenset(monitored),
+        monitored_mac_names=monitored_names,
         enable_alloc=bool(cfg.get(CONF_ENABLE_ALLOC, DEFAULT_ENABLE_ALLOC)),
         enable_renew=bool(cfg.get(CONF_ENABLE_RENEW, DEFAULT_ENABLE_RENEW)),
         cooldown_seconds=int(cfg.get(CONF_COOLDOWN_SECONDS, DEFAULT_COOLDOWN_SECONDS)),
@@ -276,6 +291,7 @@ async def _handle_client(
 
             payload = {
                 "mac": event.mac,
+                "device_name": runtime.monitored_mac_names.get(event.mac),
                 "event_type": event.event_type,
                 "ip": event.ip,
                 "remote_ip": remote_ip,
