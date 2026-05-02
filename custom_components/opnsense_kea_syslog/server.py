@@ -246,11 +246,22 @@ async def _handle_client(
                 _LOGGER.debug("Line did not match Kea parser from %s: %s", remote_ip, line)
                 continue
 
+            event_mac = _normalize_mac(event.mac)
+            if not event_mac:
+                _LOGGER.debug(
+                    "Ignoring event (invalid MAC) from %s: mac=%s event_type=%s ip=%s",
+                    remote_ip,
+                    event.mac,
+                    event.event_type,
+                    event.ip,
+                )
+                continue
+
             if event.event_type == "DHCP4_LEASE_ALLOC" and not runtime.enable_alloc:
                 _LOGGER.debug(
                     "Ignoring DHCP4_LEASE_ALLOC (disabled) from %s: mac=%s ip=%s",
                     remote_ip,
-                    event.mac,
+                    event_mac,
                     event.ip,
                 )
                 continue
@@ -258,16 +269,16 @@ async def _handle_client(
                 _LOGGER.debug(
                     "Ignoring DHCP4_LEASE_RENEW (disabled) from %s: mac=%s ip=%s",
                     remote_ip,
-                    event.mac,
+                    event_mac,
                     event.ip,
                 )
                 continue
 
-            if event.mac not in runtime.monitored_macs:
+            if event_mac not in runtime.monitored_macs:
                 _LOGGER.debug(
                     "Ignoring event (MAC not monitored) from %s: mac=%s event_type=%s ip=%s monitored=%s",
                     remote_ip,
-                    event.mac,
+                    event_mac,
                     event.event_type,
                     event.ip,
                     sorted(runtime.monitored_macs),
@@ -275,23 +286,23 @@ async def _handle_client(
                 continue
 
             now = time()
-            prev = last_seen.get(event.mac, 0.0)
+            prev = last_seen.get(event_mac, 0.0)
             if runtime.cooldown_seconds > 0 and (now - prev) < runtime.cooldown_seconds:
                 _LOGGER.debug(
                     "Ignoring event (cooldown) from %s: mac=%s event_type=%s ip=%s cooldown_s=%s elapsed_s=%.3f",
                     remote_ip,
-                    event.mac,
+                    event_mac,
                     event.event_type,
                     event.ip,
                     runtime.cooldown_seconds,
                     now - prev,
                 )
                 continue
-            last_seen[event.mac] = now
+            last_seen[event_mac] = now
 
             payload = {
-                "mac": event.mac,
-                "device_name": runtime.monitored_mac_names.get(event.mac),
+                "mac": event_mac,
+                "device_name": runtime.monitored_mac_names.get(event_mac),
                 "event_type": event.event_type,
                 "ip": event.ip,
                 "remote_ip": remote_ip,
