@@ -64,6 +64,8 @@ action:
       brightness_pct: 100
 ```
 
+**Important**: Remember to restart Home Assistant for these settings to take effect.
+
 ## Quick test (manual)
 From an allowed host (e.g., OPNsense itself or any machine in the allowlist), and using a configured MAC address, connect and send a line:
 
